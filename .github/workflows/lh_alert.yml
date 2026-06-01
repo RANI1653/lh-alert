@@ -1,0 +1,40 @@
+name: LH 청약플러스 공고 알림
+
+on:
+  schedule:
+    - cron: '0 23 * * *'
+    - cron: '0 3 * * *'
+    - cron: '0 9 * * *'
+  workflow_dispatch:
+
+jobs:
+  check-notices:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 저장소 체크아웃
+        uses: actions/checkout@v4
+
+      - name: 이전 공고 목록 캐시 복원
+        uses: actions/cache@v4
+        with:
+          path: seen_notices.json
+          key: seen-notices-${{ github.run_id }}
+          restore-keys: |
+            seen-notices-
+
+      - name: Python 설정
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: 패키지 설치
+        run: pip install requests beautifulsoup4
+
+      - name: LH 공고 확인 및 이메일 발송
+        env:
+          GMAIL_USER:      ${{ secrets.GMAIL_USER }}
+          GMAIL_PASSWORD:  ${{ secrets.GMAIL_PASSWORD }}
+          NOTIFY_EMAIL:    ${{ secrets.NOTIFY_EMAIL }}
+          DATA_GO_API_KEY: ${{ secrets.DATA_GO_API_KEY }}
+        run: python check_lh.py
